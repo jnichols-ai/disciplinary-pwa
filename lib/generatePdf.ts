@@ -25,11 +25,16 @@ function drawLetterhead(
   officePhone: string | undefined,
   logoDataUrl?: string
 ): number {
+  // Tracks how far down the logo (or fallback wordmark) actually extends,
+  // so the title below it always clears the artwork with a fixed gap —
+  // regardless of the logo's real aspect ratio.
+  let logoBottom = y;
+
   if (logoDataUrl) {
-    // Fit the logo into a max 150x60pt box while preserving its real aspect
+    // Fit the logo into a max 150x55pt box while preserving its real aspect
     // ratio, so the spider mark isn't stretched/squished.
     const maxW = 150;
-    const maxH = 60;
+    const maxH = 55;
     let drawW = maxW;
     let drawH = maxH;
     try {
@@ -46,6 +51,7 @@ function drawLetterhead(
       // fall back to default box if dimensions can't be read
     }
     doc.addImage(logoDataUrl, "JPEG", MARGIN, y, drawW, drawH);
+    logoBottom = y + drawH;
   } else {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
@@ -53,6 +59,7 @@ function drawLetterhead(
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text("[logo pending]", MARGIN, y + 32);
+    logoBottom = y + 36;
   }
 
   if (officeAddress) {
@@ -69,7 +76,10 @@ function drawLetterhead(
     }
   }
 
-  return y + 68;
+  // Guarantee at least a 20pt gap between the bottom of the logo/wordmark
+  // and whatever gets drawn next (the document title), so the title never
+  // overlaps the artwork even if the logo's aspect ratio runs tall.
+  return Math.max(y + 68, logoBottom + 20);
 }
 
 function drawSectionHeading(doc: jsPDF, text: string, y: number): number {
