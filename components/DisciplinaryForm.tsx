@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DisciplinaryFormData, emptyFormData } from "@/lib/types";
 import { MANAGER_OFFICES, findManagerOffice } from "@/lib/managerLookup";
 import {
@@ -51,11 +51,24 @@ export default function DisciplinaryForm() {
   const [data, setData] = useState<DisciplinaryFormData>(emptyFormData);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [employeeOptions, setEmployeeOptions] = useState<string[]>([]);
 
   const officePreview = useMemo(
     () => findManagerOffice(data.submittingManager),
     [data.submittingManager]
   );
+
+  // Pulls active employees from the monday.com Employee Directory board so
+  // the Employee Name field can suggest real names via a datalist. Fails
+  // soft — if the request errors, the field just stays a plain text input.
+  useEffect(() => {
+    fetch("/api/employees")
+      .then((res) => res.json())
+      .then((body) => {
+        if (Array.isArray(body.employees)) setEmployeeOptions(body.employees);
+      })
+      .catch(() => {});
+  }, []);
 
   function update<K extends keyof DisciplinaryFormData>(
     key: K,
@@ -144,10 +157,22 @@ export default function DisciplinaryForm() {
           <Field label="Employee Name" required>
             <input
               className="input"
+              list="employee-directory-options"
+              autoComplete="off"
+              placeholder={
+                employeeOptions.length
+                  ? "Start typing a name…"
+                  : "Type the employee's name"
+              }
               value={data.employeeName}
               onChange={(e) => update("employeeName", e.target.value)}
               required
             />
+            <datalist id="employee-directory-options">
+              {employeeOptions.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </Field>
           <Field label="Position" required>
             <input

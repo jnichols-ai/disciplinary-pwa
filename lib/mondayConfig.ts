@@ -9,6 +9,14 @@ export const MONDAY_GROUP_ID = {
   closed: "group_mm4jxpk0",
 } as const;
 
+// Employee Directory board (Human Resources workspace) — source of truth for
+// the Employee Name autocomplete on the disciplinary action form.
+export const EMPLOYEE_DIRECTORY_BOARD_ID = "18003250999";
+export const EMPLOYEE_DIRECTORY_COLUMN_ID = {
+  status: "status",
+} as const;
+export const EMPLOYEE_DIRECTORY_ACTIVE_STATUS_LABEL = "Active";
+
 export const MONDAY_COLUMN_ID = {
   status: "color_mm4jy3a1",
   actionType: "color_mm4jfxxr",

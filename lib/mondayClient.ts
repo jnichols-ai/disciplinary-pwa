@@ -56,6 +56,101 @@ export async function findMondayUserIdByName(
   return match ? match.id : null;
 }
 
+interface EmployeeDirectoryItem {
+  name: string;
+  column_values: { id: string; text: string | null }[];
+}
+
+interface ItemsPage {
+  cursor: string | null;
+  items: EmployeeDirectoryItem[];
+}
+
+let cachedEmployeeNames: { names: string[]; fetchedAt: number } | null = null;
+const EMPLOYEE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — keeps the form fast
+// while still picking up directory edits within a few minutes.
+
+/**
+ * Pulls every "Active" employee name off the Employee Directory board in
+ * monday.com, paginating through all items (the board currently has ~300).
+ * Results are cached in memory for a few minutes so the form doesn't hit the
+ * monday API on every page load, while still reflecting directory edits
+ * (new hires, status changes) shortly after they happen.
+ */
+export async function getActiveEmployeeNames(): Promise<string[]> {
+  if (
+    cachedEmployeeNames &&
+    Date.now() - cachedEmployeeNames.fetchedAt < EMPLOYEE_CACHE_TTL_MS
+  ) {
+    return cachedEmployeeNames.names;
+  }
+
+  const { EMPLOYEE_DIRECTORY_BOARD_ID, EMPLOYEE_DIRECTORY_COLUMN_ID, EMPLOYEE_DIRECTORY_ACTIVE_STATUS_LABEL } =
+    await import("./mondayConfig");
+
+  const names: string[] = [];
+  let cursor: string | null = null;
+  let isFirstPage = true;
+
+  while (isFirstPage || cursor) {
+    isFirstPage = false;
+    let page: ItemsPage;
+
+    if (cursor) {
+      const data = await mondayGraphQL<{ next_items_page: ItemsPage }>(
+        `query ($cursor: String!) {
+          next_items_page (cursor: $cursor, limit: 500) {
+            cursor
+            items {
+              name
+              column_values(ids: ["${EMPLOYEE_DIRECTORY_COLUMN_ID.status}"]) {
+                id
+                text
+              }
+            }
+          }
+        }`,
+        { cursor }
+      );
+      page = data.next_items_page;
+    } else {
+      const data = await mondayGraphQL<{ boards: { items_page: ItemsPage }[] }>(
+        `query ($boardId: ID!) {
+          boards (ids: [$boardId]) {
+            items_page (limit: 500) {
+              cursor
+              items {
+                name
+                column_values(ids: ["${EMPLOYEE_DIRECTORY_COLUMN_ID.status}"]) {
+                  id
+                  text
+                }
+              }
+            }
+          }
+        }`,
+        { boardId: EMPLOYEE_DIRECTORY_BOARD_ID }
+      );
+      page = data.boards[0]?.items_page ?? { cursor: null, items: [] };
+    }
+
+    for (const item of page.items) {
+      const statusText = item.column_values.find(
+        (c) => c.id === EMPLOYEE_DIRECTORY_COLUMN_ID.status
+      )?.text;
+      if (statusText === EMPLOYEE_DIRECTORY_ACTIVE_STATUS_LABEL && item.name) {
+        names.push(item.name);
+      }
+    }
+
+    cursor = page.cursor;
+  }
+
+  names.sort((a, b) => a.localeCompare(b));
+  cachedEmployeeNames = { names, fetchedAt: Date.now() };
+  return names;
+}
+
 export async function uploadFileToColumn(
   itemId: string,
   columnId: string,
