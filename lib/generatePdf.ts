@@ -1,7 +1,6 @@
 import { jsPDF } from "jspdf";
 import { DisciplinaryFormData } from "./types";
 import { findManagerOffice } from "./managerLookup";
-import { CONSEQUENCE_LANGUAGE, ActionType } from "./formOptions";
 
 const PAGE_WIDTH = 612; // 8.5in * 72pt
 const MARGIN = 48;
@@ -181,12 +180,12 @@ export function generateDisciplinaryPdf(
   y = drawSectionHeading(doc, "Corrective Action Plan", y + 6);
   y = drawWrappedParagraph(doc, data.correctiveActionPlan, y);
 
-  // Consequences
+  // Consequences — the form prefills this field with the standard
+  // escalation-step boilerplate (see CONSEQUENCE_LANGUAGE in formOptions.ts)
+  // when Action Type is selected, and the manager can edit/append before
+  // submitting. The PDF just prints whatever ended up in the field, so
+  // there's a single source of truth instead of duplicating the text.
   y = drawSectionHeading(doc, "Consequences of Further Violations", y + 6);
-  const consequenceText = data.actionType
-    ? CONSEQUENCE_LANGUAGE[data.actionType as ActionType]
-    : "";
-  y = drawWrappedParagraph(doc, consequenceText, y);
   if (data.additionalConsequenceNotes) {
     y = drawWrappedParagraph(doc, data.additionalConsequenceNotes, y);
   }

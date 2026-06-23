@@ -7,6 +7,8 @@ import {
   ACTION_TYPES,
   VIOLATION_CATEGORIES,
   MANAGER_ROLES,
+  CONSEQUENCE_LANGUAGE,
+  ActionType,
 } from "@/lib/formOptions";
 import { generateDisciplinaryPdf, pdfFileName } from "@/lib/generatePdf";
 
@@ -75,6 +77,22 @@ export default function DisciplinaryForm() {
     value: DisciplinaryFormData[K]
   ) {
     setData((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Selecting an Action Type overwrites "Additional Consequence Notes" with
+  // the standard escalation-step boilerplate for that step, so the manager
+  // sees and can edit/append to it right in the form instead of it only
+  // showing up later in the generated PDF. Re-selecting a different Action
+  // Type always replaces whatever is currently in the field.
+  function handleActionTypeChange(value: string) {
+    const actionType = value as DisciplinaryFormData["actionType"];
+    setData((prev) => ({
+      ...prev,
+      actionType,
+      additionalConsequenceNotes: actionType
+        ? CONSEQUENCE_LANGUAGE[actionType as ActionType]
+        : "",
+    }));
   }
 
   async function buildPdfBlob(): Promise<Blob> {
@@ -266,9 +284,7 @@ export default function DisciplinaryForm() {
             <select
               className="input"
               value={data.actionType}
-              onChange={(e) =>
-                update("actionType", e.target.value as DisciplinaryFormData["actionType"])
-              }
+              onChange={(e) => handleActionTypeChange(e.target.value)}
               required
             >
               <option value="">Select…</option>
