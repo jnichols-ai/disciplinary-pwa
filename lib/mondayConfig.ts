@@ -1,12 +1,11 @@
 // Disciplinary Action Tracker board (Service workspace)
 export const MONDAY_BOARD_ID = "18418855689";
 
+// The board no longer tracks a multi-stage workflow — every submission lands
+// in this single group. A submitted form is considered complete once the
+// PDF is generated and attached, so there's nothing further to move between.
 export const MONDAY_GROUP_ID = {
-  draft: "group_mm4jv8d0",
-  pendingSignature: "group_mm4jvj4z",
-  acknowledged: "group_mm4j1s04",
-  escalated: "group_mm4jvwc1",
-  closed: "group_mm4jxpk0",
+  submitted: "group_mm4jvj4z",
 } as const;
 
 // Employee Directory board (Human Resources workspace) — source of truth for
@@ -18,7 +17,6 @@ export const EMPLOYEE_DIRECTORY_COLUMN_ID = {
 export const EMPLOYEE_DIRECTORY_ACTIVE_STATUS_LABEL = "Active";
 
 export const MONDAY_COLUMN_ID = {
-  status: "color_mm4jy3a1",
   actionType: "color_mm4jfxxr",
   violationCategory: "dropdown_mm4j3cpq",
   managerRole: "dropdown_mm4j3vra",

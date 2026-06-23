@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
     const office = findManagerOffice(data.submittingManager);
 
     const columnValues: Record<string, unknown> = {
-      [MONDAY_COLUMN_ID.status]: { label: "Pending Signature" },
       [MONDAY_COLUMN_ID.actionType]: data.actionType ? { label: data.actionType } : null,
       [MONDAY_COLUMN_ID.violationCategory]: data.violationCategory
         ? { labels: [data.violationCategory] }
@@ -78,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     const result = await mondayGraphQL<{ create_item: { id: string } }>(mutation, {
       boardId: MONDAY_BOARD_ID,
-      groupId: MONDAY_GROUP_ID.pendingSignature,
+      groupId: MONDAY_GROUP_ID.submitted,
       itemName,
       columnValues: JSON.stringify(columnValues),
     });
