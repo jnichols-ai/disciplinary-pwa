@@ -20,7 +20,13 @@ export const VIOLATION_CATEGORIES = [
 
 export type ViolationCategory = (typeof VIOLATION_CATEGORIES)[number];
 
-export const MANAGER_ROLES = ["Branch Manager", "Regional Manager"] as const;
+export const MANAGER_ROLES = [
+  "Branch Manager",
+  "Regional Manager",
+  "Setter Team Manager",
+  "Inspector Team Manager",
+  "Inside Sales Manager",
+] as const;
 export type ManagerRole = (typeof MANAGER_ROLES)[number];
 
 // Boilerplate consequence language shown based on escalation step.
