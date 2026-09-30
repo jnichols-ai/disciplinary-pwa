@@ -81,7 +81,29 @@ function drawLetterhead(
   return Math.max(y + 68, logoBottom + 20);
 }
 
+const LINE_HEIGHT = 13;
+// Space kept clear at the bottom of every page for the page-number footer.
+const FOOTER_SPACE = 24;
+
+function bottomLimit(doc: jsPDF): number {
+  return doc.internal.pageSize.getHeight() - MARGIN - FOOTER_SPACE;
+}
+
+// Starts a new page when the next block (of `needed` points) would run past
+// the bottom margin. Long descriptions used to print straight off the bottom
+// of page 1 — everything past the edge was silently lost.
+function ensureSpace(doc: jsPDF, y: number, needed: number): number {
+  if (y + needed > bottomLimit(doc)) {
+    doc.addPage();
+    return MARGIN;
+  }
+  return y;
+}
+
 function drawSectionHeading(doc: jsPDF, text: string, y: number): number {
+  // Keep a heading together with at least a couple lines of its content
+  // so it's never stranded alone at the bottom of a page.
+  y = ensureSpace(doc, y, 16 + LINE_HEIGHT * 2);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text(text.toUpperCase(), MARGIN, y);
@@ -115,9 +137,39 @@ function drawWrappedParagraph(
 ): number {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  const lines = doc.splitTextToSize(text || "—", width);
-  doc.text(lines, MARGIN, y);
-  return y + lines.length * 13 + 6;
+  const lines: string[] = doc.splitTextToSize(text || "—", width);
+  // Draw line by line so long text flows onto additional pages instead of
+  // running off the bottom edge.
+  for (const line of lines) {
+    const next = ensureSpace(doc, y, LINE_HEIGHT);
+    if (next !== y) {
+      y = next;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+    }
+    doc.text(line, MARGIN, y);
+    y += LINE_HEIGHT;
+  }
+  return y + 6;
+}
+
+// "Page X of Y" plus the employee's name on every page, so a multi-page
+// signed notice can't be separated or have a page go missing unnoticed.
+function drawPageFooters(doc: jsPDF, data: DisciplinaryFormData): void {
+  const total = doc.getNumberOfPages();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    const left = data.employeeName ? `${data.employeeName} — ${data.actionType}` : "";
+    if (left) doc.text(left, MARGIN, pageHeight - MARGIN + 10);
+    doc.text(`Page ${i} of ${total}`, PAGE_WIDTH - MARGIN, pageHeight - MARGIN + 10, {
+      align: "right",
+    });
+    doc.setTextColor(0, 0, 0);
+  }
 }
 
 export function generateDisciplinaryPdf(
@@ -170,6 +222,7 @@ export function generateDisciplinaryPdf(
   }
 
   if (!isDocumentation && data.isRepeatOffense) {
+    y = ensureSpace(doc, y, 18);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9.5);
     doc.text(
@@ -203,12 +256,11 @@ export function generateDisciplinaryPdf(
   // Push signatures toward the bottom of the page, but keep on one page
   // when content runs long by adding a page break if needed.
   const signatureBlockHeight = 110;
-  const pageHeight = doc.internal.pageSize.getHeight();
-  if (y + signatureBlockHeight > pageHeight - MARGIN) {
+  if (y + 20 + signatureBlockHeight > bottomLimit(doc)) {
     doc.addPage();
     y = MARGIN;
   } else {
-    y = Math.max(y + 20, pageHeight - MARGIN - signatureBlockHeight);
+    y = Math.max(y + 20, bottomLimit(doc) - signatureBlockHeight);
   }
 
   y = drawSectionHeading(doc, "Acknowledgment & Signatures", y);
@@ -234,6 +286,7 @@ export function generateDisciplinaryPdf(
   doc.text("Manager Signature", col2X, y + 12);
   doc.text("Date", col2X + sigLineWidth - 60, y + 12);
 
+  drawPageFooters(doc, data);
   return doc;
 }
 
