@@ -4,6 +4,7 @@ export const ACTION_TYPES = [
   "Final Written Warning",
   "Suspension",
   "Termination",
+  "Documentation",
 ] as const;
 
 export type ActionType = (typeof ACTION_TYPES)[number];
@@ -41,4 +42,8 @@ export const CONSEQUENCE_LANGUAGE: Record<ActionType, string> = {
     "Continued failure to correct this behavior, or any further policy violation upon return from suspension, will result in termination of employment.",
   Termination:
     "This action results in the immediate termination of employment, effective as of the date listed above.",
+  // Documentation is a record-only entry (no violation, no consequences).
+  Documentation: "",
 };
+
+export const DOCUMENTATION_ACTION = "Documentation" as const;

@@ -8,6 +8,7 @@ import {
   VIOLATION_CATEGORIES,
   MANAGER_ROLES,
   CONSEQUENCE_LANGUAGE,
+  DOCUMENTATION_ACTION,
   ActionType,
 } from "@/lib/formOptions";
 import { generateDisciplinaryPdf, pdfFileName } from "@/lib/generatePdf";
@@ -84,15 +85,36 @@ export default function DisciplinaryForm() {
   // sees and can edit/append to it right in the form instead of it only
   // showing up later in the generated PDF. Re-selecting a different Action
   // Type always replaces whatever is currently in the field.
+  //
+  // "Documentation" is a record-only entry: there's no violation, so the
+  // violation/incident/corrective-action/consequence fields are hidden and
+  // cleared, and a single documentation field is shown instead.
+  const isDocumentation = data.actionType === DOCUMENTATION_ACTION;
+
   function handleActionTypeChange(value: string) {
     const actionType = value as DisciplinaryFormData["actionType"];
-    setData((prev) => ({
-      ...prev,
-      actionType,
-      additionalConsequenceNotes: actionType
-        ? CONSEQUENCE_LANGUAGE[actionType as ActionType]
-        : "",
-    }));
+    setData((prev) => {
+      if (actionType === DOCUMENTATION_ACTION) {
+        return {
+          ...prev,
+          actionType,
+          violationCategory: "",
+          incidentDescription: "",
+          correctiveActionPlan: "",
+          additionalConsequenceNotes: "",
+          isRepeatOffense: false,
+          priorWriteUpReference: "",
+        };
+      }
+      return {
+        ...prev,
+        actionType,
+        documentationNotes: "",
+        additionalConsequenceNotes: actionType
+          ? CONSEQUENCE_LANGUAGE[actionType as ActionType]
+          : "",
+      };
+    });
   }
 
   async function buildPdfBlob(): Promise<Blob> {
@@ -141,8 +163,9 @@ export default function DisciplinaryForm() {
     data.managerRole &&
     data.incidentDate &&
     data.actionType &&
-    data.violationCategory &&
-    data.incidentDescription &&
+    (isDocumentation
+      ? data.documentationNotes
+      : data.violationCategory && data.incidentDescription) &&
     data.employeeAcknowledged;
 
   return (
@@ -295,6 +318,7 @@ export default function DisciplinaryForm() {
               ))}
             </select>
           </Field>
+          {!isDocumentation && (
           <Field label="Violation Category" required>
             <select
               className="input"
@@ -315,8 +339,11 @@ export default function DisciplinaryForm() {
               ))}
             </select>
           </Field>
+          )}
         </div>
 
+        {!isDocumentation && (
+        <>
         <label className="flex items-center gap-2 text-sm text-neutral-700">
           <input
             type="checkbox"
@@ -360,6 +387,20 @@ export default function DisciplinaryForm() {
             onChange={(e) => update("additionalConsequenceNotes", e.target.value)}
           />
         </Field>
+        </>
+        )}
+
+        {isDocumentation && (
+          <Field label="Documentation" required>
+            <textarea
+              className="input min-h-[160px]"
+              placeholder="Record what is being documented (conversation, observation, coaching, etc.)"
+              value={data.documentationNotes}
+              onChange={(e) => update("documentationNotes", e.target.value)}
+              required
+            />
+          </Field>
+        )}
       </section>
 
       <section className="space-y-2 border-t border-neutral-200 pt-4">

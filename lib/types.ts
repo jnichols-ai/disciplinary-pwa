@@ -15,6 +15,7 @@ export interface DisciplinaryFormData {
   priorWriteUpReference: string;
   correctiveActionPlan: string;
   additionalConsequenceNotes: string;
+  documentationNotes: string;
   employeeAcknowledged: boolean;
 }
 
@@ -33,5 +34,6 @@ export const emptyFormData: DisciplinaryFormData = {
   priorWriteUpReference: "",
   correctiveActionPlan: "",
   additionalConsequenceNotes: "",
+  documentationNotes: "",
   employeeAcknowledged: false,
 };

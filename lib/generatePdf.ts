@@ -125,6 +125,7 @@ export function generateDisciplinaryPdf(
   logoDataUrl?: string
 ): jsPDF {
   const office = findManagerOffice(data.submittingManager);
+  const isDocumentation = data.actionType === "Documentation";
   const doc = new jsPDF({ unit: "pt", format: "letter" });
 
   let y = MARGIN;
@@ -132,7 +133,7 @@ export function generateDisciplinaryPdf(
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
-  doc.text("DISCIPLINARY ACTION NOTICE", MARGIN, y);
+  doc.text(isDocumentation ? "DOCUMENTATION NOTICE" : "DISCIPLINARY ACTION NOTICE", MARGIN, y);
   y += 22;
 
   // Employee / incident info grid (2 columns)
@@ -158,10 +159,17 @@ export function generateDisciplinaryPdf(
   // Action type + violation category
   y = drawSectionHeading(doc, "Action Taken", y);
   drawField(doc, "Action Type", data.actionType, MARGIN, y + 4, colWidth);
-  drawField(doc, "Violation Category", data.violationCategory, col2X, y + 4, colWidth);
+  if (!isDocumentation) {
+    drawField(doc, "Violation Category", data.violationCategory, col2X, y + 4, colWidth);
+  }
   y += 4 + 28;
 
-  if (data.isRepeatOffense) {
+  if (isDocumentation) {
+    y = drawSectionHeading(doc, "Documentation", y + 4);
+    y = drawWrappedParagraph(doc, data.documentationNotes, y);
+  }
+
+  if (!isDocumentation && data.isRepeatOffense) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9.5);
     doc.text(
@@ -172,6 +180,7 @@ export function generateDisciplinaryPdf(
     y += 18;
   }
 
+  if (!isDocumentation) {
   // Incident description
   y = drawSectionHeading(doc, "Description of Incident", y + 4);
   y = drawWrappedParagraph(doc, data.incidentDescription, y);
@@ -188,6 +197,7 @@ export function generateDisciplinaryPdf(
   y = drawSectionHeading(doc, "Consequences of Further Violations", y + 6);
   if (data.additionalConsequenceNotes) {
     y = drawWrappedParagraph(doc, data.additionalConsequenceNotes, y);
+  }
   }
 
   // Push signatures toward the bottom of the page, but keep on one page

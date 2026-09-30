@@ -22,11 +22,14 @@ export async function POST(req: NextRequest) {
     const data: DisciplinaryFormData = JSON.parse(dataRaw);
     const office = findManagerOffice(data.submittingManager);
 
+    const isDocumentation = data.actionType === "Documentation";
+
     const columnValues: Record<string, unknown> = {
       [MONDAY_COLUMN_ID.actionType]: data.actionType ? { label: data.actionType } : null,
-      [MONDAY_COLUMN_ID.violationCategory]: data.violationCategory
-        ? { labels: [data.violationCategory] }
-        : null,
+      [MONDAY_COLUMN_ID.violationCategory]:
+        !isDocumentation && data.violationCategory
+          ? { labels: [data.violationCategory] }
+          : null,
       [MONDAY_COLUMN_ID.managerRole]: data.managerRole
         ? { labels: [data.managerRole] }
         : null,
@@ -42,7 +45,12 @@ export async function POST(req: NextRequest) {
       [MONDAY_COLUMN_ID.repeatOffense]: data.isRepeatOffense
         ? { checked: "true" }
         : null,
-      [MONDAY_COLUMN_ID.incidentDescription]: data.incidentDescription ?? "",
+      [MONDAY_COLUMN_ID.incidentDescription]: isDocumentation
+        ? ""
+        : data.incidentDescription ?? "",
+      [MONDAY_COLUMN_ID.documentationNotes]: isDocumentation
+        ? data.documentationNotes ?? ""
+        : "",
     };
 
     // Best-effort: only set the people column if the manager's name matches

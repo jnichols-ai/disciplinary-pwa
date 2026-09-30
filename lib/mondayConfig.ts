@@ -30,4 +30,5 @@ export const MONDAY_COLUMN_ID = {
   linkedPriorWriteUp: "board_relation_mm4j13ea",
   pdfAttachment: "file_mm4j9vyx",
   incidentDescription: "long_text_mm4j986c",
+  documentationNotes: "long_text_mm7pwrv",
 } as const;
